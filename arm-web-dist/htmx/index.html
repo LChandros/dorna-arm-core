@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>arm-core console (htmx + SSE)</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="htmx.min.js"></script>
+    <script src="sse.js"></script>
+    <script src="json-enc.js"></script>
+    <script>
+      // dynamic values for hx-vals (read the step/feed fields at click time)
+      function step() { return parseFloat(document.getElementById("step").value) || 0; }
+      function feed() { return parseFloat(document.getElementById("feed").value) || 500; }
+    </script>
+  </head>
+  <body hx-ext="json-enc">
+    <header>
+      <span class="title">arm-core (htmx + SSE)</span>
+      <span class="conn ok">live push via /events</span>
+      <button class="stop" hx-post="/stop" hx-swap="none">STOP</button>
+    </header>
+
+    <main>
+      <!-- One SSE connection; named events swap into their targets, no polling. -->
+      <div hx-ext="sse" sse-connect="/events" style="display: contents">
+        <section>
+          <h2>state (pushed)</h2>
+          <div sse-swap="state">waiting for first event…</div>
+        </section>
+        <section>
+          <h2>hall inputs (pushed)</h2>
+          <div sse-swap="inputs">waiting for first event…</div>
+        </section>
+      </div>
+
+      <section>
+        <h2>jog &amp; home</h2>
+        <div class="jogcfg">
+          <label>step <input id="step" type="number" value="2" step="0.5" /></label>
+          <label>feed <input id="feed" type="number" value="500" step="50" /></label>
+        </div>
+        <div id="axes">
+          <div class="axisrow">
+            <span class="axname">X</span>
+            <button hx-post="/jog" hx-swap="none" hx-confirm="J0 (X) is known-broken hardware. Proceed?" hx-vals="js:{axis:'X', delta:-step(), feed:feed()}">-</button>
+            <button hx-post="/jog" hx-swap="none" hx-confirm="J0 (X) is known-broken hardware. Proceed?" hx-vals="js:{axis:'X', delta:step(), feed:feed()}">+</button>
+            <button hx-post="/home" hx-swap="none" hx-confirm="J0 (X) homing is known-broken. Home anyway?" hx-vals="js:{axis:'X'}">home</button>
+          </div>
+          <div class="axisrow">
+            <span class="axname">Y</span>
+            <button hx-post="/jog" hx-swap="none" hx-vals="js:{axis:'Y', delta:-step(), feed:feed()}">-</button>
+            <button hx-post="/jog" hx-swap="none" hx-vals="js:{axis:'Y', delta:step(), feed:feed()}">+</button>
+            <button hx-post="/home" hx-swap="none" hx-vals="js:{axis:'Y'}">home</button>
+          </div>
+          <div class="axisrow">
+            <span class="axname">Z</span>
+            <button hx-post="/jog" hx-swap="none" hx-vals="js:{axis:'Z', delta:-step(), feed:feed()}">-</button>
+            <button hx-post="/jog" hx-swap="none" hx-vals="js:{axis:'Z', delta:step(), feed:feed()}">+</button>
+            <button hx-post="/home" hx-swap="none" hx-vals="js:{axis:'Z'}">home</button>
+          </div>
+          <div class="axisrow">
+            <span class="axname">A</span>
+            <button hx-post="/jog" hx-swap="none" hx-vals="js:{axis:'A', delta:-step(), feed:feed()}">-</button>
+            <button hx-post="/jog" hx-swap="none" hx-vals="js:{axis:'A', delta:step(), feed:feed()}">+</button>
+            <button hx-post="/home" hx-swap="none" hx-vals="js:{axis:'A'}">home</button>
+          </div>
+          <div class="axisrow">
+            <span class="axname">B</span>
+            <button hx-post="/jog" hx-swap="none" hx-vals="js:{axis:'B', delta:-step(), feed:feed()}">-</button>
+            <button hx-post="/jog" hx-swap="none" hx-vals="js:{axis:'B', delta:step(), feed:feed()}">+</button>
+            <button hx-post="/home" hx-swap="none" hx-vals="js:{axis:'B'}">home</button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>raw g2core</h2>
+        <form hx-post="/raw" hx-target="#rawout" hx-swap="innerHTML">
+          <input name="line" placeholder="{&quot;fv&quot;:null}" size="30" />
+          <button>send</button>
+        </form>
+        <pre id="rawout"></pre>
+      </section>
+    </main>
+  </body>
+</html>

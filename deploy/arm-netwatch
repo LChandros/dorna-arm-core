@@ -1,0 +1,92 @@
+#!/bin/bash
+# arm-netwatch: every 2s write wifi/link/power health to the arm console as net.json.
+# Read-only on the system; never touches the arm controller or its serial port.
+OUT=/home/intern/arm-web-dist/net.json
+ST=/run/arm-netwatch
+EV=$ST/events.tsv          # chronological: ts<TAB>type<TAB>detail
+IW=/usr/sbin/iw
+mkdir -p "$ST"
+
+jesc() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
+
+# --- one-time seed from this boot's journal + dmesg (not repeated on service restart)
+if [ ! -f "$ST/seeded" ]; then
+  now=$(date +%s)
+  up=$(cut -d. -f1 /proc/uptime)
+  boot=$((now - up))
+  {
+    journalctl -b -u wpa_supplicant -o short-unix --no-pager 2>/dev/null |
+      awk '/CTRL-EVENT-DISCONNECTED/ {split($1,a,"."); printf "%s\twifi_down\twpa_supplicant (journal)\n", a[1]}
+           /CTRL-EVENT-CONNECTED/    {split($1,a,"."); printf "%s\twifi_up\twpa_supplicant (journal)\n", a[1]}'
+    dmesg 2>/dev/null | sed -n 's/^\[ *\([0-9]*\)\.[0-9]*\] .*\(Undervoltage detected\|Voltage normalised\).*/\1 \2/p' |
+      awk -v b="$boot" '$2=="Undervoltage" {printf "%d\tundervoltage_start\tdmesg\n", b+$1}
+                        $2=="Voltage"      {printf "%d\tundervoltage_end\tdmesg\n", b+$1}'
+  } | sort -n -s > "$EV.tmp"
+  mv "$EV.tmp" "$EV"
+  : > "$ST/seeded"
+fi
+[ -f "$EV" ] || : > "$EV"
+
+drops=$(grep -c "	wifi_down	" "$EV")
+uvcount=$(grep -c "	undervoltage_start	" "$EV")
+
+addev() { # type detail
+  printf '%s\t%s\t%s\n' "$(date +%s)" "$1" "$2" >> "$EV"
+  if [ "$(wc -l < "$EV")" -gt 500 ]; then tail -n 200 "$EV" > "$EV.tmp" && mv "$EV.tmp" "$EV"; fi
+  evdirty=1
+}
+
+prev_link=""; prev_uv=""
+[ -f "$ST/prev_link" ] && prev_link=$(cat "$ST/prev_link")
+[ -f "$ST/prev_uv" ] && prev_uv=$(cat "$ST/prev_uv")
+evdirty=1; evjson="[]"
+
+while true; do
+  link=$("$IW" dev wlan0 link 2>/dev/null)
+  if echo "$link" | grep -q '^Connected'; then
+    link_up=1
+    ssid=$(echo "$link" | sed -n 's/^[[:space:]]*SSID: //p')
+    sig=$(echo "$link" | sed -n 's/^[[:space:]]*signal: \(-\?[0-9]*\) dBm.*/\1/p')
+    txb=$(echo "$link" | sed -n 's/^[[:space:]]*tx bitrate: \(.*\)/\1/p')
+  else
+    link_up=0; ssid=""; sig=""; txb=""
+  fi
+  ip=$(ip -4 -o addr show wlan0 2>/dev/null | awk '{sub(/\/.*/,"",$4); print $4; exit}')
+  eth=$(cat /sys/class/net/eth0/carrier 2>/dev/null); [ "$eth" = 1 ] && eth_up=true || eth_up=false
+  raw=$(vcgencmd get_throttled 2>/dev/null | sed -n 's/^throttled=//p'); [ -z "$raw" ] && raw=0x0
+  v=$((raw))
+  uv_now=$((v & 1)); uv_boot=$(((v >> 16) & 1))
+  up=$(cut -d. -f1 /proc/uptime)
+
+  if [ -n "$prev_link" ] && [ "$link_up" != "$prev_link" ]; then
+    if [ "$link_up" = 1 ]; then addev wifi_up "wlan0 reconnected${ssid:+ to $ssid}"
+    else addev wifi_down "wlan0 link lost"; drops=$((drops+1)); fi
+  fi
+  if [ -n "$prev_uv" ] && [ "$uv_now" != "$prev_uv" ]; then
+    if [ "$uv_now" = 1 ]; then addev undervoltage_start "throttled=$raw"; uvcount=$((uvcount+1))
+    else addev undervoltage_end "throttled=$raw"; fi
+  fi
+  prev_link=$link_up; prev_uv=$uv_now
+  echo "$prev_link" > "$ST/prev_link"; echo "$prev_uv" > "$ST/prev_uv"
+
+  if [ "$evdirty" = 1 ]; then
+    evjson=$(tac "$EV" | head -n 20 | awk -F'\t' 'function e(s){gsub(/\\/,"\\\\",s);gsub(/"/,"\\\"",s);return s}
+      {printf "%s{\"ts\":%s,\"type\":\"%s\",\"detail\":\"%s\"}", (NR>1?",":""), $1, $2, e($3)}')
+    evjson="[$evjson]"; evdirty=0
+  fi
+
+  [ "$link_up" = 1 ] && lu=true || lu=false
+  [ "$uv_now" = 1 ] && un=true || un=false
+  [ "$uv_boot" = 1 ] && ub=true || ub=false
+  tmp="$OUT.tmp"
+  printf '{"ts":%s,"ssid":%s,"signal_dbm":%s,"tx_bitrate":%s,"link_up":%s,"ip":%s,"eth0_up":%s,"undervoltage_now":%s,"undervoltage_since_boot":%s,"throttled_raw":"%s","uptime_s":%s,"drops_since_boot":%s,"undervoltage_count_since_boot":%s,"events":%s}\n' \
+    "$(date +%s)" \
+    "$([ -n "$ssid" ] && echo "\"$(jesc "$ssid")\"" || echo null)" \
+    "${sig:-null}" \
+    "$([ -n "$txb" ] && echo "\"$(jesc "$txb")\"" || echo null)" \
+    "$lu" \
+    "$([ -n "$ip" ] && echo "\"$ip\"" || echo null)" \
+    "$eth_up" "$un" "$ub" "$raw" "$up" "$drops" "$uvcount" "$evjson" > "$tmp"
+  chown intern:intern "$tmp"; chmod 644 "$tmp"; mv "$tmp" "$OUT"
+  sleep 2
+done

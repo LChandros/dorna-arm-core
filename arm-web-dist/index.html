@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>arm-core debug console</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <span class="title">arm-core</span>
+      <label>daemon <input id="base" type="text" size="30" /></label>
+      <span id="conn" class="conn">connecting</span>
+      <button id="stop" class="stop">STOP</button>
+    </header>
+
+    <main>
+      <section id="linkhealth" class="linkhealth">
+        <h2>link health</h2>
+        <div class="lh-top">
+          <span id="lh-badge" class="lh-badge">LINK ?</span>
+          <span id="lh-age" class="hint"></span>
+        </div>
+        <div class="lh-cols">
+          <div>
+            <h3>wifi</h3>
+            <div id="lh-wifi" class="summary"></div>
+          </div>
+          <div>
+            <h3>power</h3>
+            <div id="lh-power" class="summary"></div>
+          </div>
+          <div>
+            <h3>events (last 20)</h3>
+            <ul id="lh-events" class="lh-events"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>state</h2>
+        <div id="summary" class="summary"></div>
+        <table id="state">
+          <thead>
+            <tr><th>axis</th><th>position</th><th>homed</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>hall inputs</h2>
+        <div id="inputs" class="inputs"></div>
+        <p class="hint">highlighted = configured homing inputs (J1=2, J2=3, wrist=4/5, J0=6)</p>
+      </section>
+
+      <section>
+        <h2>jog &amp; home</h2>
+        <div class="jogcfg">
+          <label>step <input id="step" type="number" value="2" step="0.5" /></label>
+          <label>feed <input id="feed" type="number" value="500" step="50" /></label>
+        </div>
+        <div id="axes"></div>
+      </section>
+
+      <section id="joystick"></section>
+
+      <section>
+        <h2>raw g2core</h2>
+        <form id="rawform">
+          <input id="rawline" type="text" placeholder='{"fv":null}' size="30" />
+          <button type="submit">send</button>
+        </form>
+        <pre id="rawout"></pre>
+      </section>
+    </main>
+
+    <script type="module" src="./js/main.js"></script>
+  </body>
+</html>

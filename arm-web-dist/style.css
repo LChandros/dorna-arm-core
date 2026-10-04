@@ -1,0 +1,123 @@
+:root {
+  --bg: #14161a;
+  --panel: #1c1f26;
+  --fg: #d6dae0;
+  --dim: #7d8694;
+  --line: #2a2e37;
+  --on: #4caf72;
+  --accent: #d8a657;
+  --danger: #d96b6b;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px/1.5 ui-monospace, "DejaVu Sans Mono", Menlo, Consolas, monospace;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.title { font-weight: bold; color: var(--accent); }
+header input { background: var(--bg); color: var(--fg); border: 1px solid var(--line); padding: 0.2rem 0.4rem; font: inherit; }
+
+.conn { color: var(--dim); }
+.conn.ok { color: var(--on); }
+.conn.bad { color: var(--danger); }
+
+.stop {
+  margin-left: auto;
+  background: var(--danger);
+  color: #fff;
+  border: 0;
+  padding: 0.5rem 1.2rem;
+  font: inherit;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+main {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+
+section { background: var(--panel); border: 1px solid var(--line); padding: 0.8rem 1rem; }
+h2 { margin: 0 0 0.6rem; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--dim); }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 0.2rem 0.4rem; border-bottom: 1px solid var(--line); }
+th { color: var(--dim); font-weight: normal; }
+
+.summary { margin-bottom: 0.6rem; color: var(--dim); }
+.summary b { color: var(--fg); margin-left: 0.6rem; }
+
+.dot {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--line);
+  vertical-align: middle;
+}
+.dot.on { background: var(--on); }
+
+.inputs { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; }
+.inputs .in { color: var(--dim); }
+.inputs .in.homing { color: var(--fg); }
+
+.jogcfg { display: flex; gap: 1rem; margin-bottom: 0.6rem; color: var(--dim); }
+.jogcfg input { width: 5rem; background: var(--bg); color: var(--fg); border: 1px solid var(--line); padding: 0.2rem; font: inherit; }
+
+.axisrow { display: flex; align-items: center; gap: 0.5rem; margin: 0.3rem 0; }
+.axname { width: 1.5rem; font-weight: bold; }
+
+button { background: var(--bg); color: var(--fg); border: 1px solid var(--line); padding: 0.3rem 0.7rem; font: inherit; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+
+.hint { color: var(--dim); font-size: 0.8rem; margin: 0.6rem 0 0; }
+
+form { display: flex; gap: 0.5rem; }
+#rawline { flex: 1; background: var(--bg); color: var(--fg); border: 1px solid var(--line); padding: 0.3rem; font: inherit; }
+#rawout { background: var(--bg); border: 1px solid var(--line); padding: 0.5rem; min-height: 2rem; overflow: auto; margin: 0.6rem 0 0; white-space: pre-wrap; color: var(--dim); }
+
+/* link health panel */
+.linkhealth { grid-column: 1 / -1; }
+.linkhealth h3 { margin: 0 0 0.3rem; font-size: 0.8rem; font-weight: normal; color: var(--dim); text-transform: uppercase; }
+.lh-top { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.8rem; }
+.lh-badge { font-size: 1.6rem; font-weight: bold; padding: 0.3rem 1rem; color: #fff; background: var(--line); }
+.lh-badge.ok { background: var(--on); }
+.lh-badge.bad { background: var(--danger); }
+.lh-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+.linkhealth .summary b { margin-left: 0; margin-right: 0.4rem; }
+.linkhealth .summary div { margin: 0.1rem 0; }
+.lh-good, .lh-ok { color: var(--on); }
+.lh-fair { color: var(--accent); }
+.lh-poor, .lh-bad { color: var(--danger); font-weight: bold; }
+.lh-events { list-style: none; margin: 0; padding: 0; max-height: 14rem; overflow: auto; }
+.lh-events li { padding: 0.1rem 0; border-bottom: 1px solid var(--line); }
+.lh-events .t { color: var(--dim); margin-right: 0.6rem; }
+.lh-events .wifi_down, .lh-events .undervoltage_start { color: var(--danger); }
+.lh-events .wifi_up, .lh-events .undervoltage_end { color: var(--on); }
+
+/* joystick panel */
+.joyraw { background: var(--bg); border: 1px solid var(--line); padding: 0.5rem; margin: 0.6rem 0 0; white-space: pre-wrap; color: var(--dim); font-size: 0.8rem; }
+.joyspeed { margin: 0.5rem 0; } .joyspeed input { vertical-align: middle; width: 12rem; }
+.joymap { width: 100%; margin: 0.6rem 0 0; border-collapse: collapse; }
+.joymap td, .joymap th { padding: 0.2rem 0.4rem; text-align: left; border-bottom: 1px solid var(--line); }
+.joymap button { padding: 0.1rem 0.5rem; }
+.joymap .joydis { color: var(--dim); opacity: 0.5; }
+.joymap .joylearning { background: rgba(255, 255, 255, 0.06); }
+.joylearn { margin: 0.6rem 0 0; padding: 0.5rem; border: 1px solid var(--accent); color: var(--accent); font-weight: bold; }
+.joymapbtns { margin: 0.6rem 0 0; display: flex; gap: 0.5rem; }
+.joyjson { width: 100%; box-sizing: border-box; margin: 0.6rem 0 0; background: var(--bg); color: var(--fg); border: 1px solid var(--line); font: 0.8rem monospace; }
